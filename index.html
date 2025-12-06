@@ -139,6 +139,74 @@
       vertical-align: middle;
       margin-right: 0px;
     }
+
+    /* 使い方モーダル */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.35);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 1000;
+    }
+    .modal-backdrop.is-open { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+      max-width: 640px;
+      width: min(640px, 100%);
+      max-height: min(80vh, 640px);
+      overflow: auto;
+      padding: 18px 20px 20px;
+      border: 1px solid #e5e7ec;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .modal-title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+    .modal-close {
+      border: none;
+      background: transparent;
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+      color: #6b7280;
+      padding: 6px;
+      border-radius: 8px;
+      transition: background 120ms ease, color 120ms ease;
+    }
+    .modal-close:hover { background: #f3f4f6; color: #111827; }
+    .usage-list {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 16px;
+      line-height: 1.55;
+      color: #374151;
+    }
+    .usage-list li { position: relative; padding-left: 18px; }
+    .usage-list li::before {
+      content: '・';
+      position: absolute;
+      left: 0;
+      color: #f57c00;
+      font-weight: 700;
+    }
   </style>
 </head>
 <body>
@@ -149,6 +217,7 @@
         <button id="loadImageBtn">画像読込</button>
         <button id="loadSvgBtn">svg読込</button>
         <button id="saveSvgBtn" disabled>svg保存</button>
+        <button id="usageBtn">【使い方】</button>
         <input id="fileInput" type="file" accept="image/png,image/jpeg,image/svg+xml,.svg" hidden />
         <input id="svgInput" type="file" accept="image/svg+xml" hidden />
       </div>
@@ -185,6 +254,26 @@
       </div>
     </div>
   </main>
+
+  <div id="usageModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="usageTitle" aria-hidden="true">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="usageTitle" class="modal-title">使い方</h2>
+        <button id="closeUsageBtn" class="modal-close" aria-label="閉じる">×</button>
+      </div>
+      <ul class="usage-list">
+        <li>間取りや図面のpng/jpg画像を用意してください</li>
+        <li>[画像読込]ボタンから、その画像を読み込んでください</li>
+        <li>前回の作業データがある場合は、[svg読込]ボタンから読込できます</li>
+        <li>[領域作成]ボタンをクリックしたあと、画像をクリックして領域を作成</li>
+        <li>色をリストから選択した後、[色変更]ボタンをクリック<br>→領域をクリックで色を変更できます</li>
+        <li>[色名称変更]ボタンで、選択している色の名前を変更できます</li>
+        <li>[縮尺設定]ボタンをクリック後、画像中の長さが分かっている2点を選択し、<br>その長さを入力してください</li>
+        <li>[面積計算]ボタンを押すと、色ごとに面積が計算されます</li>
+        <li>[svg保存]ボタンを押すと、作業内容が保存されます</li>
+      </ul>
+    </div>
+  </div>
   <script src="main.js" defer></script>
 </body>
 </html>

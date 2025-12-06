@@ -18,6 +18,9 @@ const colorSwatch = document.getElementById('colorSwatch');
 const colorSelect = document.getElementById('colorSelect');
 const colorModeBtn = document.getElementById('colorModeBtn');
 const renameColorBtn = document.getElementById('renameColorBtn');
+const usageBtn = document.getElementById('usageBtn');
+const usageModal = document.getElementById('usageModal');
+const closeUsageBtn = document.getElementById('closeUsageBtn');
 
 const state = {
   imageDataUrl: null,
@@ -40,6 +43,28 @@ const svgNS = 'http://www.w3.org/2000/svg';
 
 function setHint(text) {
   hint.textContent = text;
+}
+
+function openUsageModal() {
+  if (!usageModal) return;
+  usageModal.classList.add('is-open');
+  usageModal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+  closeUsageBtn?.focus();
+}
+
+function closeUsageModal() {
+  if (!usageModal) return;
+  usageModal.classList.remove('is-open');
+  usageModal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  usageBtn?.focus();
+}
+
+function handleUsageBackdropClick(event) {
+  if (event.target === usageModal) {
+    closeUsageModal();
+  }
 }
 
 function syncStageSize(width, height) {
@@ -369,6 +394,14 @@ loadImageBtn.addEventListener('click', () => {
 loadSvgBtn.addEventListener('click', () => {
   svgInput.value = '';
   svgInput.click();
+});
+usageBtn?.addEventListener('click', openUsageModal);
+closeUsageBtn?.addEventListener('click', closeUsageModal);
+usageModal?.addEventListener('click', handleUsageBackdropClick);
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && usageModal?.classList.contains('is-open')) {
+    closeUsageModal();
+  }
 });
 
 fileInput.addEventListener('change', (e) => {
