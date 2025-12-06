@@ -142,17 +142,17 @@ function addPoint(x, y) {
   confirmBtn.disabled = state.currentPoints.length < 3;
 }
 
-function drawPoint(x, y) {
+function drawPoint(x, y, isDraft = true) {
   const c = document.createElementNS(svgNS, 'circle');
   c.setAttribute('class', 'point');
   c.setAttribute('cx', x);
   c.setAttribute('cy', y);
   c.setAttribute('r', 5);
   overlay.appendChild(c);
-  draftElements.push(c);
+  if (isDraft) draftElements.push(c);
 }
 
-function drawLine(a, b) {
+function drawLine(a, b, isDraft = true) {
   const line = document.createElementNS(svgNS, 'line');
   line.setAttribute('class', 'edge');
   line.setAttribute('x1', a.x);
@@ -160,7 +160,7 @@ function drawLine(a, b) {
   line.setAttribute('x2', b.x);
   line.setAttribute('y2', b.y);
   overlay.appendChild(line);
-  draftElements.push(line);
+  if (isDraft) draftElements.push(line);
 }
 
 function closePolygon() {
@@ -523,6 +523,7 @@ function parseAndLoadSvg(svgText) {
     const entry = { points, color, name, element: polygon };
     setPolygonColor(entry, color);
     overlay.appendChild(polygon);
+    points.forEach((pt) => drawPoint(pt.x, pt.y, false));
     state.polygons.push(entry);
     const key = normalizeColor(color);
     if (key && !colorNameMap.has(key)) {
