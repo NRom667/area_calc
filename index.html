@@ -57,6 +57,15 @@
     #startRegionBtn { background: #fff3e0; border-color: var(--accent); color: var(--accent-strong); }
     #saveSvgBtn { background: #e8f5e9; border-color: #7cb342; color: #33691e; }
     #confirmBtn { background: #ede7f6; border-color: #7e57c2; color: #4527a0; }
+    .mode-btn.is-active { background: #fff3e0; border-color: var(--accent-strong); color: var(--accent-strong); }
+    .color-select {
+      border: 1px solid #d6d9de;
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: white;
+      font-size: 14px;
+      min-width: 140px;
+    }
     #hint {
       margin: 0 0 14px;
       color: #5c6470;
@@ -97,7 +106,8 @@
     }
     #overlay .point { fill: var(--accent); stroke: white; stroke-width: 2; }
     #overlay .edge { stroke: var(--accent-strong); stroke-width: 2; }
-    #overlay .polygon { fill: #ffb74d; fill-opacity: 0.28; stroke: var(--accent-strong); stroke-width: 2; }
+    /* 色はJSで上書きするため塗りと線の色は指定しない */
+    #overlay .polygon { stroke-width: 2; stroke-linejoin: round; }
   </style>
 </head>
 <body>
@@ -107,6 +117,19 @@
       <button id="loadImageBtn">画像読込</button>
       <input id="fileInput" type="file" accept="image/png,image/jpeg" hidden />
       <button id="startRegionBtn">領域作成</button>
+      <button id="colorModeBtn" class="mode-btn">色変更</button>
+      <select id="colorSelect" class="color-select" aria-label="領域の色を選択">
+        <option value="#4169e1 ">ブルー</option>
+        <option value="#66bb6a">グリーン</option>
+        <option value="#ffca28">イエロー</option>
+        <option value="#ab47bc">パープル</option>
+        <option value="#8d6e63">ブラウン</option>
+        <option value="#ffa726">オレンジ</option>
+        <option value="#29b6f6">スカイ</option>
+        <option value="#ef5350">レッド</option>
+        <option value="#d4e157">ライム</option>
+        <option value="#fa8072">サーモン</option>
+      </select>
       <button id="confirmBtn" disabled>確定</button>
       <button id="saveSvgBtn" disabled>svg保存</button>
     </div>
