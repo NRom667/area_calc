@@ -125,6 +125,9 @@ function renameSelectedColor() {
   option.textContent = name;
   state.selectedColorName = name;
   updateColorSwatch();
+  // 既存の同色ポリゴンの名称を最新にそろえる
+  updatePolygonNamesForColor(state.selectedColor, name);
+  calculateAreas();
   setHint(`色名を「${name}」に変更しました`);
 }
 
@@ -577,6 +580,16 @@ function applyLoadedColorNames(colorNameMap) {
   state.selectedColor = colorSelect.value;
   state.selectedColorName = colorSelect.selectedOptions[0]?.textContent.trim() || state.selectedColor;
   updateColorSwatch();
+}
+
+function updatePolygonNamesForColor(color, name) {
+  const key = normalizeColor(color);
+  state.polygons.forEach((poly) => {
+    if (normalizeColor(poly.color) === key) {
+      poly.name = name;
+      poly.element.setAttribute('data-name', name);
+    }
+  });
 }
 
 function startScaleMode() {
