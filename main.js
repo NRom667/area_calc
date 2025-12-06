@@ -13,6 +13,7 @@ const hint = document.getElementById('hint');
 const areaResult = document.getElementById('areaResult');
 const colorSelect = document.getElementById('colorSelect');
 const colorModeBtn = document.getElementById('colorModeBtn');
+const renameColorBtn = document.getElementById('renameColorBtn');
 
 const state = {
   imageDataUrl: null,
@@ -99,6 +100,25 @@ function startDrawing() {
   state.drawing = true;
   confirmBtn.disabled = true;
   setHint('頂点をクリックで追加。3点以上で確定できます');
+}
+
+function renameSelectedColor() {
+  if (!colorSelect) return;
+  const option = colorSelect.selectedOptions[0];
+  if (!option) return;
+  const currentName = option.textContent.trim();
+  const input = window.prompt('付けたい色の名前を入力してください', currentName);
+  if (input === null) {
+    setHint('色名称の変更をキャンセルしました');
+    return;
+  }
+  const name = input.trim();
+  if (!name) {
+    setHint('名称を入力してください');
+    return;
+  }
+  option.textContent = name;
+  setHint(`色名を「${name}」に変更しました`);
 }
 
 function addPoint(x, y) {
@@ -329,6 +349,7 @@ colorSelect.addEventListener('change', (e) => {
 colorModeBtn.addEventListener('click', toggleColorMode);
 calcAreaBtn.addEventListener('click', calculateAreas);
 scaleBtn.addEventListener('click', startScaleMode);
+renameColorBtn.addEventListener('click', renameSelectedColor);
 
 updateColorModeUi();
 setHint('1. 画像読込 → 2. 領域作成 → クリックで頂点追加 → 確定 → 必要なら再度領域作成 → SVG保存 / 縮尺設定で m² 表示');
