@@ -4,6 +4,7 @@ const startRegionBtn = document.getElementById('startRegionBtn');
 const confirmBtn = document.getElementById('confirmBtn');
 const saveSvgBtn = document.getElementById('saveSvgBtn');
 const calcAreaBtn = document.getElementById('calcAreaBtn');
+const scaleBtn = document.getElementById('scaleBtn');
 const photo = document.getElementById('photo');
 const overlay = document.getElementById('overlay');
 const stage = document.getElementById('stage');
@@ -19,6 +20,9 @@ const state = {
   currentPoints: [],
   drawing: false,
   colorMode: false,
+  scaleMode: false,
+  scalePoints: [],
+  metersPerPixel: null,
   size: { width: 0, height: 0 },
   selectedColor: colorSelect.value,
 };
@@ -48,6 +52,9 @@ function clearOverlay() {
   resetDraft();
   saveSvgBtn.disabled = true;
   renderAreaSummary(new Map());
+  state.metersPerPixel = null;
+  state.scalePoints = [];
+  scaleBtn.textContent = '縮尺設定';
 }
 
 function resetDraft() {
@@ -82,6 +89,10 @@ function startDrawing() {
     setHint('先に画像を読み込んでください');
     return;
   }
+  if (state.scaleMode) {
+    setHint('まず縮尺設定を完了してください（2点クリック後に数値入力）');
+    return;
+  }
   // すでに確定した領域は残し、編集中のドラフトだけ捨てる
   exitColorMode();
   resetDraft();
@@ -91,6 +102,7 @@ function startDrawing() {
 }
 
 function addPoint(x, y) {
+  if (state.scaleMode) return;
   state.currentPoints.push({ x, y });
   drawPoint(x, y);
   const len = state.currentPoints.length;
@@ -181,6 +193,10 @@ function handleOverlayClick(event) {
   const rect = overlay.getBoundingClientRect();
   const x = Number((event.clientX - rect.left).toFixed(1));
   const y = Number((event.clientY - rect.top).toFixed(1));
+  if (state.scaleMode) {
+    handleScaleClick(x, y);
+    return;
+  }
   if (state.colorMode) {
     applyColorToPolygon(x, y);
     return;
@@ -201,6 +217,7 @@ function handleImageLoad() {
   overlay.style.display = 'block';
   placeholder.style.display = 'none';
   exitColorMode();
+  exitScaleMode();
   clearOverlay();
   setHint('領域作成を押して多角形を描き始めてください');
 }
@@ -266,6 +283,7 @@ function toggleColorMode() {
     setHint('先に画像を読み込んでください');
     return;
   }
+  if (state.scaleMode) exitScaleMode();
   state.colorMode = !state.colorMode;
   if (state.colorMode) {
     resetDraft();
@@ -310,9 +328,10 @@ colorSelect.addEventListener('change', (e) => {
 });
 colorModeBtn.addEventListener('click', toggleColorMode);
 calcAreaBtn.addEventListener('click', calculateAreas);
+scaleBtn.addEventListener('click', startScaleMode);
 
 updateColorModeUi();
-setHint('1. 画像読込 → 2. 領域作成 → クリックで頂点追加 → 確定 → 必要なら再度領域作成 → SVG保存');
+setHint('1. 画像読込 → 2. 領域作成 → クリックで頂点追加 → 確定 → 必要なら再度領域作成 → SVG保存 / 縮尺設定で m² 表示');
 renderAreaSummary(new Map());
 
 function polygonArea(points) {
@@ -351,15 +370,80 @@ function renderAreaSummary(totals) {
   }
   const rows = [];
   totals.forEach((info, color) => {
-    const areaValue = Math.round(info.area);
+    const areaValue = state.metersPerPixel
+      ? (info.area * state.metersPerPixel * state.metersPerPixel)
+      : info.area;
+    const display = state.metersPerPixel
+      ? `${areaValue.toLocaleString(undefined, { maximumFractionDigits: 2 })} m²`
+      : `${Math.round(areaValue).toLocaleString()} px²`;
     rows.push(
       `<div class="row">` +
       `<span class="swatch" style="background:${color}"></span>` +
       `<span>${color}</span>` +
-      `<strong>${areaValue.toLocaleString()} px²</strong>` +
+      `<strong>${display}</strong>` +
       `<span>(${info.count}領域)</span>` +
       `</div>`,
     );
   });
   areaResult.innerHTML = rows.join('');
+}
+
+function startScaleMode() {
+  if (!state.imageDataUrl) {
+    setHint('先に画像を読み込んでください');
+    return;
+  }
+  exitColorMode();
+  resetDraft();
+  state.scaleMode = true;
+  state.scalePoints = [];
+  scaleBtn.textContent = '縮尺設定中…';
+  setHint('縮尺設定: 任意の2点をクリックしてください');
+}
+
+function exitScaleMode() {
+  if (!state.scaleMode) return;
+  state.scaleMode = false;
+  state.scalePoints = [];
+  scaleBtn.textContent = '縮尺設定';
+}
+
+function handleScaleClick(x, y) {
+  state.scalePoints.push({ x, y });
+  drawPoint(x, y);
+  if (state.scalePoints.length === 1) {
+    setHint('もう1点クリックしてください');
+    return;
+  }
+  const [a, b] = state.scalePoints;
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  const distPx = Math.hypot(dx, dy);
+  if (distPx === 0) {
+    setHint('距離が 0px です。別の2点を選んでください');
+    state.scalePoints = [];
+    draftElements.pop()?.remove();
+    draftElements.pop()?.remove();
+    return;
+  }
+  const input = window.prompt('縮尺を入力してください（単位：m）', '');
+  if (!input) {
+    setHint('縮尺設定をキャンセルしました');
+    exitScaleMode();
+    resetDraft();
+    return;
+  }
+  const meters = Number(input);
+  if (Number.isNaN(meters) || meters <= 0) {
+    setHint('数値を正しく入力してください（例: 12.5）');
+    state.scalePoints = [];
+    resetDraft();
+    exitScaleMode();
+    return;
+  }
+  state.metersPerPixel = meters / distPx;
+  exitScaleMode();
+  resetDraft();
+  setHint(`縮尺を設定しました: 1px = ${(state.metersPerPixel).toFixed(4)} m`);
+  calculateAreas();
 }
