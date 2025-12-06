@@ -133,6 +133,15 @@
       border: 1px solid #c7ccd6;
       flex-shrink: 0;
     }
+    .color-swatch {
+      width: 20px;
+      height: 20px;
+      border-radius: 6px;
+      border: 1px solid #c7ccd6;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
   </style>
 </head>
 <body>
@@ -144,6 +153,7 @@
       <button id="startRegionBtn">領域作成</button>
       <button id="confirmBtn" disabled>確定</button>
       <button id="colorModeBtn" class="mode-btn">色変更</button>
+      <span id="colorSwatch" class="color-swatch" aria-hidden="true"></span>
       <select id="colorSelect" class="color-select" aria-label="領域の色を選択">
         <option value="#4169e1">●ブルー</option>
         <option value="#66bb6a">グリーン</option>

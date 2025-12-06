@@ -11,6 +11,7 @@ const stage = document.getElementById('stage');
 const placeholder = document.getElementById('placeholder');
 const hint = document.getElementById('hint');
 const areaResult = document.getElementById('areaResult');
+const colorSwatch = document.getElementById('colorSwatch');
 const colorSelect = document.getElementById('colorSelect');
 const colorModeBtn = document.getElementById('colorModeBtn');
 const renameColorBtn = document.getElementById('renameColorBtn');
@@ -26,6 +27,7 @@ const state = {
   metersPerPixel: null,
   size: { width: 0, height: 0 },
   selectedColor: colorSelect.value,
+  selectedColorName: colorSelect.selectedOptions[0]?.textContent.trim() || '',
 };
 const draftElements = [];
 
@@ -118,6 +120,8 @@ function renameSelectedColor() {
     return;
   }
   option.textContent = name;
+  state.selectedColorName = name;
+  updateColorSwatch();
   setHint(`色名を「${name}」に変更しました`);
 }
 
@@ -166,6 +170,7 @@ function closePolygon() {
   const polygonEntry = {
     points: [...state.currentPoints],
     color: state.selectedColor,
+    name: state.selectedColorName || state.selectedColor,
     element: polygon,
   };
   setPolygonColor(polygonEntry, polygonEntry.color);
@@ -295,6 +300,7 @@ function applyColorToPolygon(x, y) {
     return;
   }
   setPolygonColor(target, state.selectedColor);
+  target.name = state.selectedColorName || state.selectedColor;
   setHint('色を変更しました');
 }
 
@@ -345,6 +351,8 @@ saveSvgBtn.addEventListener('click', saveAsSvg);
 photo.addEventListener('load', handleImageLoad);
 colorSelect.addEventListener('change', (e) => {
   state.selectedColor = e.target.value;
+  state.selectedColorName = e.target.selectedOptions[0]?.textContent.trim() || '';
+  updateColorSwatch();
 });
 colorModeBtn.addEventListener('click', toggleColorMode);
 calcAreaBtn.addEventListener('click', calculateAreas);
@@ -354,6 +362,7 @@ renameColorBtn.addEventListener('click', renameSelectedColor);
 updateColorModeUi();
 setHint('1. 画像読込 → 2. 領域作成 → クリックで頂点追加 → 確定 → 必要なら再度領域作成 → SVG保存 / 縮尺設定で m² 表示');
 renderAreaSummary(new Map());
+updateColorSwatch();
 
 function polygonArea(points) {
   if (points.length < 3) return 0;
@@ -374,9 +383,10 @@ function calculateAreas() {
   const totals = new Map();
   state.polygons.forEach((poly) => {
     const area = polygonArea(poly.points);
-    const current = totals.get(poly.color) || { area: 0, count: 0 };
+    const current = totals.get(poly.color) || { area: 0, count: 0, name: poly.name || poly.color };
     current.area += area;
     current.count += 1;
+    if (!current.name) current.name = poly.name || poly.color;
     totals.set(poly.color, current);
   });
   renderAreaSummary(totals);
@@ -400,13 +410,18 @@ function renderAreaSummary(totals) {
     rows.push(
       `<div class="row">` +
       `<span class="swatch" style="background:${color}"></span>` +
-      `<span>${color}</span>` +
+      `<span>${info.name || color}</span>` +
       `<strong>${display}</strong>` +
       `<span>(${info.count}領域)</span>` +
       `</div>`,
     );
   });
   areaResult.innerHTML = rows.join('');
+}
+
+function updateColorSwatch() {
+  if (!colorSwatch) return;
+  colorSwatch.style.background = state.selectedColor;
 }
 
 function startScaleMode() {
