@@ -11,11 +11,12 @@ const hint = document.getElementById('hint');
 
 const state = {
   imageDataUrl: null,
-  points: [],
+  polygons: [],
+  currentPoints: [],
   drawing: false,
-  closed: false,
   size: { width: 0, height: 0 },
 };
+const draftElements = [];
 
 const svgNS = 'http://www.w3.org/2000/svg';
 
@@ -37,11 +38,16 @@ function syncStageSize(width, height) {
 
 function clearOverlay() {
   overlay.innerHTML = '';
-  state.points = [];
-  state.closed = false;
+  state.polygons = [];
+  resetDraft();
+  saveSvgBtn.disabled = true;
+}
+
+function resetDraft() {
+  draftElements.splice(0).forEach((el) => el.remove());
+  state.currentPoints = [];
   state.drawing = false;
   confirmBtn.disabled = true;
-  saveSvgBtn.disabled = true;
 }
 
 function startDrawing() {
@@ -49,19 +55,21 @@ function startDrawing() {
     setHint('先に画像を読み込んでください');
     return;
   }
-  clearOverlay();
+  // すでに確定した領域は残し、編集中のドラフトだけ捨てる
+  resetDraft();
   state.drawing = true;
+  confirmBtn.disabled = true;
   setHint('頂点をクリックで追加。3点以上で確定できます');
 }
 
 function addPoint(x, y) {
-  state.points.push({ x, y });
+  state.currentPoints.push({ x, y });
   drawPoint(x, y);
-  const len = state.points.length;
+  const len = state.currentPoints.length;
   if (len > 1) {
-    drawLine(state.points[len - 2], state.points[len - 1]);
+    drawLine(state.currentPoints[len - 2], state.currentPoints[len - 1]);
   }
-  confirmBtn.disabled = state.points.length < 3;
+  confirmBtn.disabled = state.currentPoints.length < 3;
 }
 
 function drawPoint(x, y) {
@@ -71,6 +79,7 @@ function drawPoint(x, y) {
   c.setAttribute('cy', y);
   c.setAttribute('r', 5);
   overlay.appendChild(c);
+  draftElements.push(c);
 }
 
 function drawLine(a, b) {
@@ -81,38 +90,46 @@ function drawLine(a, b) {
   line.setAttribute('x2', b.x);
   line.setAttribute('y2', b.y);
   overlay.appendChild(line);
+  draftElements.push(line);
 }
 
 function closePolygon() {
-  if (!state.drawing || state.points.length < 3) return;
-  const first = state.points[0];
-  const last = state.points[state.points.length - 1];
+  if (!state.drawing || state.currentPoints.length < 3) return;
+  const first = state.currentPoints[0];
+  const last = state.currentPoints[state.currentPoints.length - 1];
   drawLine(last, first);
 
   const polygon = document.createElementNS(svgNS, 'polygon');
   polygon.setAttribute('class', 'polygon');
-  const pointString = state.points.map((p) => `${p.x},${p.y}`).join(' ');
+  const pointString = state.currentPoints.map((p) => `${p.x},${p.y}`).join(' ');
   polygon.setAttribute('points', pointString);
   overlay.insertBefore(polygon, overlay.firstChild);
 
+  draftElements.splice(0);
+  state.polygons.push([...state.currentPoints]);
+  state.currentPoints = [];
   state.drawing = false;
-  state.closed = true;
   confirmBtn.disabled = true;
-  saveSvgBtn.disabled = false;
-  setHint('完成！「svg保存」でダウンロードできます');
+  saveSvgBtn.disabled = state.polygons.length === 0;
+  setHint('完成！「領域作成」で次の領域を描くか、「svg保存」でまとめて保存できます');
 }
 
 function saveAsSvg() {
-  if (!state.closed || state.points.length < 3) return;
+  if (state.polygons.length === 0) return;
   const { width, height } = state.size;
-  const points = state.points.map((p) => `${p.x},${p.y}`).join(' ');
   const imageTag = state.imageDataUrl
     ? `<image href="${state.imageDataUrl}" width="${width}" height="${height}" />`
     : '';
+  const polygonsMarkup = state.polygons
+    .map((poly) => {
+      const pts = poly.map((p) => `${p.x},${p.y}`).join(' ');
+      return `<polygon points="${pts}" fill="#ffb74d" fill-opacity="0.28" stroke="#e65100" stroke-width="2" />`;
+    })
+    .join('');
   const svg = `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">` +
     `${imageTag}` +
-    `<polygon points="${points}" fill="#ffb74d" fill-opacity="0.28" stroke="#e65100" stroke-width="2" />` +
+    `${polygonsMarkup}` +
     `</svg>`;
 
   const blob = new Blob([svg], { type: 'image/svg+xml' });
@@ -129,8 +146,9 @@ function saveAsSvg() {
 function handleOverlayClick(event) {
   if (!state.drawing) return;
   const rect = overlay.getBoundingClientRect();
-  const x = Number((event.clientX - rect.left).toFixed(1));
-  const y = Number((event.clientY - rect.top).toFixed(1));
+  const rawX = Number((event.clientX - rect.left).toFixed(1));
+  const rawY = Number((event.clientY - rect.top).toFixed(1));
+  const { x, y } = snapToFirstPolygon(rawX, rawY);
   addPoint(x, y);
 }
 
@@ -146,6 +164,24 @@ function handleImageLoad() {
   placeholder.style.display = 'none';
   clearOverlay();
   setHint('領域作成を押して多角形を描き始めてください');
+}
+
+function snapToFirstPolygon(x, y) {
+  if (state.polygons.length === 0) return { x, y };
+  const threshold = 8; // px
+  const firstPoly = state.polygons[0];
+  let snapped = { x, y };
+  let bestDist = threshold;
+  firstPoly.forEach((p) => {
+    const dx = p.x - x;
+    const dy = p.y - y;
+    const dist = Math.hypot(dx, dy);
+    if (dist <= bestDist) {
+      bestDist = dist;
+      snapped = { x: p.x, y: p.y };
+    }
+  });
+  return snapped;
 }
 
 function handleFileSelection(file) {
@@ -178,4 +214,4 @@ confirmBtn.addEventListener('click', closePolygon);
 saveSvgBtn.addEventListener('click', saveAsSvg);
 photo.addEventListener('load', handleImageLoad);
 
-setHint('1. 画像を読み込む → 2. 領域作成 → クリックで頂点追加 → 確定 → SVG保存');
+setHint('1. 画像読込 → 2. 領域作成 → クリックで頂点追加 → 確定 → 必要なら再度領域作成 → SVG保存');
