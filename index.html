@@ -34,13 +34,10 @@
       font-size: 22px;
       letter-spacing: 0.01em;
     }
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 10px;
-    }
+    .controls { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .controls-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .controls-top { justify-content: flex-start; }
+    .controls-bottom { justify-content: flex-start; }
     button {
       appearance: none;
       border: 1px solid #d6d9de;
@@ -140,7 +137,7 @@
       border: 1px solid #c7ccd6;
       display: inline-block;
       vertical-align: middle;
-      margin-right: 6px;
+      margin-right: 0px;
     }
   </style>
 </head>
@@ -148,30 +145,34 @@
   <main class="page">
     <h1>画像に多角形を描いてSVG保存</h1>
     <div class="controls">
-      <button id="loadImageBtn">画像読込</button>
-      <input id="fileInput" type="file" accept="image/png,image/jpeg,image/svg+xml,.svg" hidden />
-      <button id="startRegionBtn">領域作成</button>
-      <button id="confirmBtn" disabled>確定</button>
-      <button id="colorModeBtn" class="mode-btn">色変更</button>
-      <span id="colorSwatch" class="color-swatch" aria-hidden="true"></span>
-      <select id="colorSelect" class="color-select" aria-label="領域の色を選択">
-        <option value="#4169e1">ブルー</option>
-        <option value="#66bb6a">グリーン</option>
-        <option value="#ffca28">イエロー</option>
-        <option value="#ab47bc">パープル</option>
-        <option value="#8d6e63">ブラウン</option>
-        <option value="#ffa726">オレンジ</option>
-        <option value="#29b6f6">スカイ</option>
-        <option value="#ef5350">レッド</option>
-        <option value="#d4e157">ライム</option>
-        <option value="#fa8072">サーモン</option>
-      </select>
-      <button id="renameColorBtn">色名称変更</button>
-      <button id="scaleBtn">縮尺設定</button>
-      <button id="calcAreaBtn">面積計算</button>
-      <button id="saveSvgBtn" disabled>svg保存</button>
-      <button id="loadSvgBtn">svg読込</button>
-      <input id="svgInput" type="file" accept="image/svg+xml" hidden />
+      <div class="controls-row controls-top">
+        <button id="loadImageBtn">画像読込</button>
+        <button id="loadSvgBtn">svg読込</button>
+        <button id="saveSvgBtn" disabled>svg保存</button>
+        <input id="fileInput" type="file" accept="image/png,image/jpeg,image/svg+xml,.svg" hidden />
+        <input id="svgInput" type="file" accept="image/svg+xml" hidden />
+      </div>
+      <div class="controls-row controls-bottom">
+        <button id="startRegionBtn">領域作成</button>
+        <button id="confirmBtn" disabled>確定</button>
+        <button id="colorModeBtn" class="mode-btn">色変更</button>
+        <span id="colorSwatch" class="color-swatch" aria-hidden="true"></span>
+        <select id="colorSelect" class="color-select" aria-label="領域の色を選択">
+          <option value="#4169e1">ブルー</option>
+          <option value="#66bb6a">グリーン</option>
+          <option value="#ffca28">イエロー</option>
+          <option value="#ab47bc">パープル</option>
+          <option value="#8d6e63">ブラウン</option>
+          <option value="#ffa726">オレンジ</option>
+          <option value="#29b6f6">スカイ</option>
+          <option value="#ef5350">レッド</option>
+          <option value="#d4e157">ライム</option>
+          <option value="#fa8072">サーモン</option>
+        </select>
+        <button id="renameColorBtn">色名称変更</button>
+        <button id="scaleBtn">縮尺設定</button>
+        <button id="calcAreaBtn">面積計算</button>
+      </div>
     </div>
     <p id="hint">1. 画像を読み込む → 2. 領域作成 → クリックで頂点追加 → 確定 → SVG保存</p>
     <div id="areaResult" class="area-result" aria-live="polite"></div>
