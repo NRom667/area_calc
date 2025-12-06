@@ -6,6 +6,7 @@ const saveSvgBtn = document.getElementById('saveSvgBtn');
 const calcAreaBtn = document.getElementById('calcAreaBtn');
 const scaleBtn = document.getElementById('scaleBtn');
 const loadSvgBtn = document.getElementById('loadSvgBtn');
+const deleteRegionBtn = document.getElementById('deleteRegionBtn');
 const svgInput = document.getElementById('svgInput');
 const photo = document.getElementById('photo');
 const overlay = document.getElementById('overlay');
@@ -25,6 +26,7 @@ const state = {
   drawing: false,
   colorMode: false,
   scaleMode: false,
+  deleteMode: false,
   scalePoints: [],
   metersPerPixel: null,
   loadingSvg: false,
@@ -55,6 +57,7 @@ function syncStageSize(width, height) {
 function clearOverlay() {
   overlay.innerHTML = '';
   state.polygons = [];
+  state.deleteMode = false;
   resetDraft();
   saveSvgBtn.disabled = true;
   renderAreaSummary(new Map());
@@ -100,6 +103,7 @@ function startDrawing() {
     return;
   }
   // すでに確定した領域は残し、編集中のドラフトだけ捨てる
+  exitDeleteMode();
   exitColorMode();
   resetDraft();
   state.drawing = true;
@@ -228,6 +232,10 @@ function handleOverlayClick(event) {
   const rect = overlay.getBoundingClientRect();
   const x = Number((event.clientX - rect.left).toFixed(1));
   const y = Number((event.clientY - rect.top).toFixed(1));
+  if (state.deleteMode) {
+    deletePolygonAt(x, y);
+    return;
+  }
   if (state.scaleMode) {
     handleScaleClick(x, y);
     return;
@@ -396,6 +404,7 @@ colorModeBtn.addEventListener('click', toggleColorMode);
 calcAreaBtn.addEventListener('click', calculateAreas);
 scaleBtn.addEventListener('click', startScaleMode);
 renameColorBtn.addEventListener('click', renameSelectedColor);
+deleteRegionBtn.addEventListener('click', startDeleteMode);
 
 updateColorModeUi();
 setHint('1. 画像読込 → 2. 領域作成 → クリックで頂点追加 → 確定 → 必要なら再度領域作成 → SVG保存 / 縮尺設定で m² 表示');
@@ -523,7 +532,7 @@ function parseAndLoadSvg(svgText) {
     const entry = { points, color, name, element: polygon };
     setPolygonColor(entry, color);
     overlay.appendChild(polygon);
-    points.forEach((pt) => drawPoint(pt.x, pt.y, false));
+    entry.points.forEach((pt) => drawPoint(pt.x, pt.y, false));
     state.polygons.push(entry);
     const key = normalizeColor(color);
     if (key && !colorNameMap.has(key)) {
@@ -599,6 +608,7 @@ function startScaleMode() {
     return;
   }
   exitColorMode();
+  exitDeleteMode();
   resetDraft();
   state.scaleMode = true;
   state.scalePoints = [];
@@ -651,6 +661,56 @@ function handleScaleClick(x, y) {
   resetDraft();
   setHint(`縮尺を設定しました: 1px = ${(state.metersPerPixel).toFixed(4)} m`);
   calculateAreas();
+}
+
+function startDeleteMode() {
+  if (state.polygons.length === 0) {
+    setHint('削除できる領域がありません');
+    return;
+  }
+  exitColorMode();
+  exitScaleMode();
+  resetDraft();
+  state.deleteMode = true;
+  setHint('削除したい領域をクリックしてください');
+}
+
+function exitDeleteMode() {
+  if (!state.deleteMode) return;
+  state.deleteMode = false;
+}
+
+function deletePolygonAt(x, y) {
+  const target = findPolygonAt(x, y);
+  if (!target) {
+    setHint('領域をクリックしてください');
+    return;
+  }
+  const idx = state.polygons.indexOf(target);
+  if (idx !== -1) {
+    state.polygons.splice(idx, 1);
+    renderPolygons();
+    saveSvgBtn.disabled = state.polygons.length === 0;
+    calculateAreas();
+    setHint('領域を削除しました');
+  }
+  exitDeleteMode();
+}
+
+function renderPolygons() {
+  overlay.innerHTML = '';
+  state.polygons.forEach((entry) => {
+    const polygon = document.createElementNS(svgNS, 'polygon');
+    polygon.setAttribute('class', 'polygon');
+    const pointString = entry.points.map((p) => `${p.x},${p.y}`).join(' ');
+    polygon.setAttribute('points', pointString);
+    polygon.setAttribute('data-name', entry.name);
+    polygon.setAttribute('data-color', entry.color);
+    entry.element = polygon;
+    setPolygonColor(entry, entry.color);
+    overlay.appendChild(polygon);
+    entry.points.forEach((pt) => drawPoint(pt.x, pt.y, false));
+  });
 }
 
 
