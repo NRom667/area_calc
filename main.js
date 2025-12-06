@@ -5,6 +5,8 @@ const confirmBtn = document.getElementById('confirmBtn');
 const saveSvgBtn = document.getElementById('saveSvgBtn');
 const calcAreaBtn = document.getElementById('calcAreaBtn');
 const scaleBtn = document.getElementById('scaleBtn');
+const loadSvgBtn = document.getElementById('loadSvgBtn');
+const svgInput = document.getElementById('svgInput');
 const photo = document.getElementById('photo');
 const overlay = document.getElementById('overlay');
 const stage = document.getElementById('stage');
@@ -25,6 +27,7 @@ const state = {
   scaleMode: false,
   scalePoints: [],
   metersPerPixel: null,
+  loadingSvg: false,
   size: { width: 0, height: 0 },
   selectedColor: colorSelect.value,
   selectedColorName: colorSelect.selectedOptions[0]?.textContent.trim() || '',
@@ -174,6 +177,8 @@ function closePolygon() {
     element: polygon,
   };
   setPolygonColor(polygonEntry, polygonEntry.color);
+  polygon.setAttribute('data-name', polygonEntry.name);
+  polygon.setAttribute('data-color', polygonEntry.color);
   overlay.appendChild(polygon);
 
   draftElements.splice(0);
@@ -188,17 +193,19 @@ function closePolygon() {
 function saveAsSvg() {
   if (state.polygons.length === 0) return;
   const { width, height } = state.size;
+  const metersPerPixelAttr = state.metersPerPixel ? ` data-meters-per-pixel="${state.metersPerPixel}"` : '';
   const imageTag = state.imageDataUrl
     ? `<image href="${state.imageDataUrl}" width="${width}" height="${height}" />`
     : '';
   const polygonsMarkup = state.polygons
     .map((poly) => {
       const pts = poly.points.map((p) => `${p.x},${p.y}`).join(' ');
-      return `<polygon points="${pts}" fill="${poly.color}" fill-opacity="0.32" stroke="${poly.color}" stroke-width="2" />`;
+      const nameAttr = poly.name ? ` data-name="${escapeHtml(poly.name)}"` : '';
+      return `<polygon points="${pts}" fill="${poly.color}" fill-opacity="0.32" stroke="${poly.color}" stroke-width="2"${nameAttr} data-color="${poly.color}" />`;
     })
     .join('');
   const svg = `<?xml version="1.0" encoding="UTF-8"?>\n` +
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"${metersPerPixelAttr}>` +
     `${imageTag}` +
     `${polygonsMarkup}` +
     `</svg>`;
@@ -241,10 +248,15 @@ function handleImageLoad() {
   photo.style.display = 'block';
   overlay.style.display = 'block';
   placeholder.style.display = 'none';
-  exitColorMode();
-  exitScaleMode();
-  clearOverlay();
-  setHint('領域作成を押して多角形を描き始めてください');
+  if (state.loadingSvg) {
+    state.loadingSvg = false;
+    setHint('SVGを読み込みました。続きから編集できます');
+  } else {
+    exitColorMode();
+    exitScaleMode();
+    clearOverlay();
+    setHint('領域作成を押して多角形を描き始めてください');
+  }
 }
 
 function snapToFirstPolygon(x, y) {
@@ -301,6 +313,8 @@ function applyColorToPolygon(x, y) {
   }
   setPolygonColor(target, state.selectedColor);
   target.name = state.selectedColorName || state.selectedColor;
+  target.element.setAttribute('data-name', target.name);
+  target.element.setAttribute('data-color', target.color);
   setHint('色を変更しました');
 }
 
@@ -329,9 +343,21 @@ function handleFileSelection(file) {
   reader.readAsDataURL(file);
 }
 
+function handleSvgSelection(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    parseAndLoadSvg(reader.result);
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
 loadImageBtn.addEventListener('click', () => {
   fileInput.value = '';
   fileInput.click();
+});
+loadSvgBtn.addEventListener('click', () => {
+  svgInput.value = '';
+  svgInput.click();
 });
 
 fileInput.addEventListener('change', (e) => {
@@ -342,6 +368,15 @@ fileInput.addEventListener('change', (e) => {
     return;
   }
   handleFileSelection(file);
+});
+svgInput.addEventListener('change', (e) => {
+  const [file] = e.target.files;
+  if (!file) return;
+  if (file.type && !/^image\/svg\+xml$/i.test(file.type) && !file.name.toLowerCase().endsWith('.svg')) {
+    setHint('svgファイルを選択してください');
+    return;
+  }
+  handleSvgSelection(file);
 });
 
 startRegionBtn.addEventListener('click', startDrawing);
@@ -405,8 +440,8 @@ function renderAreaSummary(totals) {
       ? (info.area * state.metersPerPixel * state.metersPerPixel)
       : info.area;
     const display = state.metersPerPixel
-      ? `${areaValue.toLocaleString(undefined, { maximumFractionDigits: 2 })} m²`
-      : `${Math.round(areaValue).toLocaleString()} px²`;
+      ? `${areaValue.toLocaleString(undefined, { maximumFractionDigits: 2 })} m2`
+      : `${Math.round(areaValue).toLocaleString()} px2`;
     rows.push(
       `<div class="row">` +
       `<span class="swatch" style="background:${color}"></span>` +
@@ -422,6 +457,126 @@ function renderAreaSummary(totals) {
 function updateColorSwatch() {
   if (!colorSwatch) return;
   colorSwatch.style.background = state.selectedColor;
+}
+
+function parseAndLoadSvg(svgText) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(svgText, 'image/svg+xml');
+  const svgEl = doc.querySelector('svg');
+  if (!svgEl) {
+    setHint('SVGを解析できませんでした');
+    return;
+  }
+
+  let width = Number(svgEl.getAttribute('width')) || Number(svgEl.viewBox?.baseVal?.width) || 0;
+  let height = Number(svgEl.getAttribute('height')) || Number(svgEl.viewBox?.baseVal?.height) || 0;
+  if (width === 0 || height === 0) {
+    width = state.size.width || 800;
+    height = state.size.height || 600;
+  }
+  const mppAttr = parseFloat(svgEl.getAttribute('data-meters-per-pixel'));
+  const imgEl = svgEl.querySelector('image');
+  const imgHref = imgEl?.getAttribute('href') || imgEl?.getAttribute('xlink:href') || null;
+
+  // 初期化
+  clearOverlay();
+  exitColorMode();
+  exitScaleMode();
+
+  if (Number.isFinite(mppAttr) && mppAttr > 0) {
+    state.metersPerPixel = mppAttr;
+  }
+
+  if (width > 0 && height > 0) {
+    syncStageSize(width, height);
+  }
+  if (imgHref) {
+    state.loadingSvg = true;
+    state.imageDataUrl = imgHref;
+    photo.src = imgHref;
+    photo.style.display = 'block';
+    overlay.style.display = 'block';
+    placeholder.style.display = 'none';
+  } else {
+    state.imageDataUrl = null;
+    photo.style.display = 'none';
+    overlay.style.display = 'block';
+    placeholder.style.display = 'none';
+  }
+
+  const polygons = Array.from(svgEl.querySelectorAll('polygon'));
+  const colorNameMap = new Map();
+  polygons.forEach((node) => {
+    const pointsAttr = node.getAttribute('points') || '';
+    const points = parsePoints(pointsAttr);
+    if (points.length < 3) return;
+    const color = node.getAttribute('data-color') || node.getAttribute('fill') || '#ff7043';
+    const name = node.getAttribute('data-name') || color;
+    const polygon = document.createElementNS(svgNS, 'polygon');
+    polygon.setAttribute('class', 'polygon');
+    polygon.setAttribute('points', pointsAttr.trim());
+    polygon.setAttribute('data-name', name);
+    polygon.setAttribute('data-color', color);
+    const entry = { points, color, name, element: polygon };
+    setPolygonColor(entry, color);
+    overlay.appendChild(polygon);
+    state.polygons.push(entry);
+    const key = normalizeColor(color);
+    if (key && !colorNameMap.has(key)) {
+      colorNameMap.set(key, name);
+    }
+  });
+
+  saveSvgBtn.disabled = state.polygons.length === 0;
+  applyLoadedColorNames(colorNameMap);
+  renderAreaSummary(new Map()); // compute with calculateAreas to include units
+  calculateAreas();
+  setHint('SVGを読み込みました。領域を編集できます');
+}
+
+function parsePoints(pointsStr) {
+  return pointsStr
+    .trim()
+    .split(/\s+/)
+    .map((pair) => pair.split(',').map(Number))
+    .filter((arr) => arr.length === 2 && Number.isFinite(arr[0]) && Number.isFinite(arr[1]))
+    .map(([x, y]) => ({ x, y }));
+}
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function normalizeColor(color) {
+  return (color || '').trim().toLowerCase();
+}
+
+function applyLoadedColorNames(colorNameMap) {
+  if (!colorSelect || !colorNameMap || colorNameMap.size === 0) return;
+  const seen = new Set();
+  Array.from(colorSelect.options).forEach((opt) => {
+    const key = normalizeColor(opt.value);
+    if (colorNameMap.has(key)) {
+      opt.textContent = colorNameMap.get(key);
+      seen.add(key);
+    }
+  });
+  // もしSVGに存在する色がセレクトに無い場合、追記する
+  colorNameMap.forEach((name, key) => {
+    if (seen.has(key)) return;
+    const option = document.createElement('option');
+    option.value = key;
+    option.textContent = name;
+    colorSelect.appendChild(option);
+  });
+  state.selectedColor = colorSelect.value;
+  state.selectedColorName = colorSelect.selectedOptions[0]?.textContent.trim() || state.selectedColor;
+  updateColorSwatch();
 }
 
 function startScaleMode() {
@@ -483,3 +638,5 @@ function handleScaleClick(x, y) {
   setHint(`縮尺を設定しました: 1px = ${(state.metersPerPixel).toFixed(4)} m`);
   calculateAreas();
 }
+
+
