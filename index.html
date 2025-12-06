@@ -108,6 +108,31 @@
     #overlay .edge { stroke: var(--accent-strong); stroke-width: 2; }
     /* 色はJSで上書きするため塗りと線の色は指定しない */
     #overlay .polygon { stroke-width: 2; stroke-linejoin: round; }
+
+    .area-result {
+      margin: 8px 0 14px;
+      padding: 10px 12px;
+      border: 1px solid #d6d9de;
+      border-radius: 10px;
+      background: #f9fafc;
+      font-size: 13px;
+      color: #394150;
+      min-height: 38px;
+      line-height: 1.4;
+    }
+    .area-result .row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 0;
+    }
+    .area-result .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      border: 1px solid #c7ccd6;
+      flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
@@ -131,9 +156,11 @@
         <option value="#fa8072">サーモン</option>
       </select>
       <button id="confirmBtn" disabled>確定</button>
+      <button id="calcAreaBtn">面積計算</button>
       <button id="saveSvgBtn" disabled>svg保存</button>
     </div>
     <p id="hint">1. 画像を読み込む → 2. 領域作成 → クリックで頂点追加 → 確定 → SVG保存</p>
+    <div id="areaResult" class="area-result" aria-live="polite"></div>
     <div id="stageWrapper">
       <div id="stage" class="stage">
         <div class="placeholder" id="placeholder">画像を読み込んでください</div>

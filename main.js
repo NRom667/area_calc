@@ -3,11 +3,13 @@ const loadImageBtn = document.getElementById('loadImageBtn');
 const startRegionBtn = document.getElementById('startRegionBtn');
 const confirmBtn = document.getElementById('confirmBtn');
 const saveSvgBtn = document.getElementById('saveSvgBtn');
+const calcAreaBtn = document.getElementById('calcAreaBtn');
 const photo = document.getElementById('photo');
 const overlay = document.getElementById('overlay');
 const stage = document.getElementById('stage');
 const placeholder = document.getElementById('placeholder');
 const hint = document.getElementById('hint');
+const areaResult = document.getElementById('areaResult');
 const colorSelect = document.getElementById('colorSelect');
 const colorModeBtn = document.getElementById('colorModeBtn');
 
@@ -45,6 +47,7 @@ function clearOverlay() {
   state.polygons = [];
   resetDraft();
   saveSvgBtn.disabled = true;
+  renderAreaSummary(new Map());
 }
 
 function resetDraft() {
@@ -306,6 +309,57 @@ colorSelect.addEventListener('change', (e) => {
   state.selectedColor = e.target.value;
 });
 colorModeBtn.addEventListener('click', toggleColorMode);
+calcAreaBtn.addEventListener('click', calculateAreas);
 
 updateColorModeUi();
 setHint('1. 画像読込 → 2. 領域作成 → クリックで頂点追加 → 確定 → 必要なら再度領域作成 → SVG保存');
+renderAreaSummary(new Map());
+
+function polygonArea(points) {
+  if (points.length < 3) return 0;
+  let sum = 0;
+  for (let i = 0; i < points.length; i += 1) {
+    const j = (i + 1) % points.length;
+    sum += points[i].x * points[j].y - points[j].x * points[i].y;
+  }
+  return Math.abs(sum) / 2;
+}
+
+function calculateAreas() {
+  if (state.polygons.length === 0) {
+    setHint('領域がありません。先に領域を作成してください');
+    renderAreaSummary(new Map());
+    return;
+  }
+  const totals = new Map();
+  state.polygons.forEach((poly) => {
+    const area = polygonArea(poly.points);
+    const current = totals.get(poly.color) || { area: 0, count: 0 };
+    current.area += area;
+    current.count += 1;
+    totals.set(poly.color, current);
+  });
+  renderAreaSummary(totals);
+  setHint('色ごとの面積を計算しました');
+}
+
+function renderAreaSummary(totals) {
+  if (!areaResult) return;
+  if (!totals || totals.size === 0) {
+    areaResult.textContent = '面積を表示する領域がありません';
+    return;
+  }
+  const rows = [];
+  totals.forEach((info, color) => {
+    const areaValue = Math.round(info.area);
+    rows.push(
+      `<div class="row">` +
+      `<span class="swatch" style="background:${color}"></span>` +
+      `<span>${color}</span>` +
+      `<strong>${areaValue.toLocaleString()} px²</strong>` +
+      `<span>(${info.count}領域)</span>` +
+      `</div>`,
+    );
+  });
+  areaResult.innerHTML = rows.join('');
+}
