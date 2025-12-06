@@ -264,7 +264,7 @@ function handleImageLoad() {
 
 function snapToFirstPolygon(x, y) {
   if (state.polygons.length === 0) return { x, y };
-  const threshold = 8; // px
+  const threshold = 20; // px
   const firstPoly = state.polygons[0].points;
   let snapped = { x, y };
   let bestDist = threshold;
