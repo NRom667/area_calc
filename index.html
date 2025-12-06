@@ -1,0 +1,124 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>領域作成ツール</title>
+  <style>
+    :root {
+      --accent: #f57c00;
+      --accent-strong: #e65100;
+      --surface: #f7f7fa;
+      --text: #222;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Hiragino Sans", "Meiryo", sans-serif;
+      background: #eef1f6;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 24px;
+    }
+    main.page {
+      width: min(1100px, 100%);
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.08);
+      padding: 24px 24px 32px;
+    }
+    h1 {
+      margin: 0 0 16px;
+      font-size: 22px;
+      letter-spacing: 0.01em;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    button {
+      appearance: none;
+      border: 1px solid #d6d9de;
+      border-radius: 10px;
+      padding: 10px 14px;
+      background: var(--surface);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 150ms ease;
+    }
+    button:hover:enabled { background: #fff5ea; border-color: var(--accent); }
+    button:active:enabled { transform: translateY(1px); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    #startRegionBtn { background: #fff3e0; border-color: var(--accent); color: var(--accent-strong); }
+    #saveSvgBtn { background: #e8f5e9; border-color: #7cb342; color: #33691e; }
+    #confirmBtn { background: #ede7f6; border-color: #7e57c2; color: #4527a0; }
+    #hint {
+      margin: 0 0 14px;
+      color: #5c6470;
+      font-size: 13px;
+    }
+    #stageWrapper {
+      width: 100%;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .stage {
+      position: relative;
+      background: repeating-linear-gradient(45deg, #f8fafc 0, #f8fafc 10px, #f1f4f8 10px, #f1f4f8 20px);
+      border: 1px dashed #ccd3dd;
+      border-radius: 12px;
+      min-height: 360px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .placeholder {
+      color: #8a93a3;
+      font-size: 14px;
+      text-align: center;
+      padding: 16px;
+    }
+    #photo {
+      display: none;
+      max-width: 100%;
+      height: auto;
+    }
+    #overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      pointer-events: auto;
+    }
+    #overlay .point { fill: var(--accent); stroke: white; stroke-width: 2; }
+    #overlay .edge { stroke: var(--accent-strong); stroke-width: 2; }
+    #overlay .polygon { fill: #ffb74d; fill-opacity: 0.28; stroke: var(--accent-strong); stroke-width: 2; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h1>画像に多角形を描いてSVG保存</h1>
+    <div class="controls">
+      <button id="loadImageBtn">画像読込</button>
+      <input id="fileInput" type="file" accept="image/png,image/jpeg" hidden />
+      <button id="startRegionBtn">領域作成</button>
+      <button id="confirmBtn" disabled>確定</button>
+      <button id="saveSvgBtn" disabled>svg保存</button>
+    </div>
+    <p id="hint">1. 画像を読み込む → 2. 領域作成 → クリックで頂点追加 → 確定 → SVG保存</p>
+    <div id="stageWrapper">
+      <div id="stage" class="stage">
+        <div class="placeholder" id="placeholder">画像を読み込んでください</div>
+        <img id="photo" alt="選択した画像" />
+        <svg id="overlay"></svg>
+      </div>
+    </div>
+  </main>
+  <script src="main.js" defer></script>
+</body>
+</html>
