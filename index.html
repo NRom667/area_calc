@@ -34,7 +34,17 @@
       font-size: 22px;
       letter-spacing: 0.01em;
     }
-    .controls { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .controls {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding: 8px 0 10px;
+      background: white;
+    }
     .controls-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
     .controls-top { justify-content: flex-start; }
     .controls-bottom { justify-content: flex-start; }
