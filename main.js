@@ -7,6 +7,7 @@ const calcAreaBtn = document.getElementById('calcAreaBtn');
 const scaleBtn = document.getElementById('scaleBtn');
 const loadSvgBtn = document.getElementById('loadSvgBtn');
 const deleteRegionBtn = document.getElementById('deleteRegionBtn');
+const undoPointBtn = document.getElementById('undoPointBtn');
 const svgInput = document.getElementById('svgInput');
 const photo = document.getElementById('photo');
 const overlay = document.getElementById('overlay');
@@ -43,6 +44,12 @@ const svgNS = 'http://www.w3.org/2000/svg';
 
 function setHint(text) {
   hint.textContent = text;
+}
+
+function updateUndoUi() {
+  if (!undoPointBtn) return;
+  undoPointBtn.style.display = state.drawing ? 'inline-block' : 'none';
+  undoPointBtn.disabled = !state.drawing || state.currentPoints.length === 0;
 }
 
 function openUsageModal() {
@@ -96,6 +103,7 @@ function resetDraft() {
   state.currentPoints = [];
   state.drawing = false;
   confirmBtn.disabled = true;
+  updateUndoUi();
 }
 
 function setPolygonColor(polygonEntry, color) {
@@ -133,6 +141,7 @@ function startDrawing() {
   resetDraft();
   state.drawing = true;
   confirmBtn.disabled = true;
+  updateUndoUi();
   setHint('頂点をクリックで追加。3点以上で確定できます');
 }
 
@@ -163,12 +172,21 @@ function renameSelectedColor() {
 function addPoint(x, y) {
   if (state.scaleMode) return;
   state.currentPoints.push({ x, y });
-  drawPoint(x, y);
-  const len = state.currentPoints.length;
-  if (len > 1) {
-    drawLine(state.currentPoints[len - 2], state.currentPoints[len - 1]);
-  }
+  redrawDraft();
   confirmBtn.disabled = state.currentPoints.length < 3;
+  updateUndoUi();
+}
+
+function redrawDraft() {
+  // Remove existing draft visuals
+  draftElements.splice(0).forEach((el) => el.remove());
+  // Recreate draft from currentPoints
+  state.currentPoints.forEach((pt, idx) => {
+    drawPoint(pt.x, pt.y);
+    if (idx > 0) {
+      drawLine(state.currentPoints[idx - 1], pt);
+    }
+  });
 }
 
 function drawPoint(x, y, isDraft = true) {
@@ -218,6 +236,7 @@ function closePolygon() {
   state.currentPoints = [];
   state.drawing = false;
   confirmBtn.disabled = true;
+  updateUndoUi();
   saveSvgBtn.disabled = state.polygons.length === 0;
   setHint('完成！「領域作成」で次の領域を描くか、「svg保存」でまとめて保存できます');
 }
@@ -404,6 +423,7 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
+undoPointBtn?.addEventListener('click', undoLastPoint);
 fileInput.addEventListener('change', (e) => {
   const [file] = e.target.files;
   if (!file) return;
@@ -443,6 +463,7 @@ updateColorModeUi();
 setHint('1. 画像読込 → 2. 領域作成 → クリックで頂点追加 → 確定 → 必要なら再度領域作成 → SVG保存 / 縮尺設定で m² 表示');
 renderAreaSummary(new Map());
 updateColorSwatch();
+updateUndoUi();
 
 function polygonArea(points) {
   if (points.length < 3) return 0;
@@ -502,6 +523,18 @@ function renderAreaSummary(totals) {
 function updateColorSwatch() {
   if (!colorSwatch) return;
   colorSwatch.style.background = state.selectedColor;
+}
+
+function undoLastPoint() {
+  if (!state.drawing || state.currentPoints.length === 0) {
+    setHint('戻せる頂点がありません');
+    return;
+  }
+  state.currentPoints.pop();
+  redrawDraft();
+  confirmBtn.disabled = state.currentPoints.length < 3;
+  updateUndoUi();
+  setHint(state.currentPoints.length === 0 ? '頂点をクリックして追加してください' : '1つ前の頂点に戻しました');
 }
 
 function parseAndLoadSvg(svgText) {
