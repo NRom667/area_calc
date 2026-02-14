@@ -509,15 +509,18 @@ function renderAreaSummary(totals) {
       ? `${areaValue.toLocaleString(undefined, { maximumFractionDigits: 2 })} m2`
       : `${Math.round(areaValue).toLocaleString()} px2`;
     rows.push(
-      `<div class="row">` +
-      `<span class="swatch" style="background:${color}"></span>` +
-      `<span>${info.name || color}</span>` +
-      `<strong>${display}</strong>` +
-      `<span>(${info.count}領域)</span>` +
-      `</div>`,
+      `<tr>` +
+      `<td><span class="swatch" style="background:${color}"></span>${info.name || color}</td>` +
+      `<td>${display}</td>` +
+      `<td>${info.count}</td>` +
+      `</tr>`,
     );
   });
-  areaResult.innerHTML = rows.join('');
+  areaResult.innerHTML =
+    `<table>` +
+    `<thead><tr><th>色</th><th>面積</th><th>領域数</th></tr></thead>` +
+    `<tbody>${rows.join('')}</tbody>` +
+    `</table>`;
 }
 
 function updateColorSwatch() {

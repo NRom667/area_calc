@@ -127,18 +127,32 @@
       min-height: 38px;
       line-height: 1.4;
     }
-    .area-result .row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 4px 0;
+    .area-result table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .area-result th,
+    .area-result td {
+      border: 1px solid #e0e4ea;
+      padding: 6px 8px;
+      text-align: left;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+    .area-result thead th {
+      background: #eef1f6;
+      font-weight: 600;
+      color: #1f2937;
     }
     .area-result .swatch {
       width: 14px;
       height: 14px;
       border-radius: 4px;
       border: 1px solid #c7ccd6;
-      flex-shrink: 0;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 6px;
     }
     .color-swatch {
       width: 20px;
