@@ -511,7 +511,7 @@ function renderAreaSummary(totals) {
     rows.push(
       `<tr>` +
       `<td><span class="swatch" style="background:${color}"></span>${info.name || color}</td>` +
-      `<td style="text-align: right">${display}</td>` +
+      `<td>${display}</td>` +
       `<td>${info.count}</td>` +
       `</tr>`,
     );
