@@ -507,6 +507,10 @@ function renderAreaSummary(totals) {
     areaResult.textContent = '面積を表示する領域がありません';
     return;
   }
+  let totalArea = 0;
+  totals.forEach((info) => {
+    totalArea += info.area;
+  });
   const rows = [];
   totals.forEach((info, color) => {
     const areaValue = state.metersPerPixel
@@ -515,17 +519,19 @@ function renderAreaSummary(totals) {
     const display = state.metersPerPixel
       ? `${areaValue.toLocaleString(undefined, { maximumFractionDigits: 2 })} m2`
       : `${Math.round(areaValue).toLocaleString()} px2`;
+    const ratio = totalArea > 0 ? `${((info.area / totalArea) * 100).toFixed(1)}%` : '0.0%';
     rows.push(
       `<tr>` +
       `<td><span class="swatch" style="background:${color}"></span>${info.name || color}</td>` +
       `<td style="text-align: right">${display}</td>` +
+      `<td style="text-align: right">${ratio}</td>` +
       `<td>${info.count}</td>` +
       `</tr>`,
     );
   });
   areaResult.innerHTML =
     `<table>` +
-    `<thead><tr><th>色</th><th>面積</th><th>領域数</th></tr></thead>` +
+    `<thead><tr><th>色</th><th>面積</th><th>比率</th><th>領域数</th></tr></thead>` +
     `<tbody>${rows.join('')}</tbody>` +
     `</table>`;
 }
