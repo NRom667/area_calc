@@ -531,7 +531,7 @@ function renderAreaSummary(totals) {
   });
   areaResult.innerHTML =
     `<table>` +
-    `<thead><tr><th>色</th><th>面積</th><th>比率</th><th>領域数</th></tr></thead>` +
+    `<thead><tr><th>名称</th><th>面積</th><th>比率</th><th>領域数</th></tr></thead>` +
     `<tbody>${rows.join('')}</tbody>` +
     `</table>`;
 }
