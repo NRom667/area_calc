@@ -138,6 +138,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   background: #eef1f6;
   font-weight: 600;
   color: #1f2937;
+  text-align: center;
 }
 .area-result .swatch {
   width: 14px;
